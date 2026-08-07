@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 837563944836.dkr.ecr.us-east-1.amazonaws.com/backend:6
+        image: us-central1-docker.pkg.dev/playground-s-11-ec8db565/fullstack/backend:503bd16bcbe74903725d15763d4140569059732c
         ports:
         - containerPort: 80
         env:
@@ -25,25 +25,43 @@ spec:
             secretKeyRef:
               name: db-secret
               key: db_host
-        - name: DB_USERNAME
+        - name: DB_USER
           valueFrom:
             secretKeyRef:
               name: db-secret
-              key: db_username
-        - name: DB_PORT
-          valueFrom:
-            configMapKeyRef:
-              name: db-config
-              key: DB_PORT
+              key: db_user
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
               name: db-config
               key: DB_NAME
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: PORT
+        - name: APP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: APP_PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: NODE_ENV
+        - name: JWT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: JWT_SECRET
+        - name: JWT_EXPIRES_IN
+          valueFrom:
+            configMapKeyRef:
+              name: db-config
+              key: JWT_EXPIRES_IN
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: db-secret
               key: db_password
-        - name: PORT
-          value: "3306"  # Adjust if necessary
