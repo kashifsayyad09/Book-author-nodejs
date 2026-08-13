@@ -8,20 +8,18 @@
   position: relative;
   overflow: hidden;
 }
-.page::before {
-  content: '';
+
+/* Living, drifting fog — three.js / Vanta.FOG */
+.vanta {
   position: fixed;
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(139,92,246,0.18), transparent 70%);
-  top: -200px; left: -200px;
-  pointer-events: none;
+  inset: 0;
+  z-index: 0;
 }
-.page::after {
+.vanta::after {
   content: '';
-  position: fixed;
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(56,189,248,0.12), transparent 70%);
-  bottom: -100px; right: -100px;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, transparent 0%, rgba(13,13,26,0.35) 65%, rgba(13,13,26,0.75) 100%);
   pointer-events: none;
 }
 
@@ -35,7 +33,6 @@
   position: relative;
   z-index: 1;
   box-shadow: var(--shadow-lg);
-  animation: fadeUp 0.4s ease both;
 }
 
 .backLink {

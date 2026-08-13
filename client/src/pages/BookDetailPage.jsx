@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Pencil, Trash2, Star, Package, Tag, Calendar, Hash, User, BookOpen } from 'lucide-react';
+import gsap from 'gsap';
 import { useBook, useDeleteBook } from '../hooks/useBooks';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
@@ -14,6 +15,17 @@ export default function BookDetailPage() {
   const deleteBook = useDeleteBook();
   const [confirming, setConfirming] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const layoutRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!layoutRef.current || isLoading) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(layoutRef.current.children, { opacity: 0, y: 24 }, {
+        opacity: 1, y: 0, duration: 0.55, stagger: 0.12, ease: 'power2.out',
+      });
+    }, layoutRef);
+    return () => ctx.revert();
+  }, [isLoading]);
 
   if (isLoading) return <div className={styles.center}><Spinner size={40} /></div>;
   const book = res?.data;
@@ -31,7 +43,7 @@ export default function BookDetailPage() {
     <div className={styles.page}>
       <Link to="/" className={styles.backLink}><ArrowLeft size={16} /> Back to library</Link>
 
-      <div className={styles.layout}>
+      <div className={styles.layout} ref={layoutRef}>
         {/* Cover */}
         <aside className={styles.aside}>
           <div className={styles.coverWrap}>

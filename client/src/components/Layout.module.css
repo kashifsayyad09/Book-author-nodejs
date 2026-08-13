@@ -6,24 +6,19 @@
   overflow-x: hidden;
 }
 
-/* ambient blobs */
-.blob1, .blob2 {
+/* Living background — three.js / Vanta.NET network of nodes */
+.vanta {
   position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
+  inset: 0;
   z-index: 0;
-  opacity: 0.18;
+  pointer-events: auto;
 }
-.blob1 {
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, #8b5cf6, transparent 70%);
-  top: -200px; left: -200px;
-}
-.blob2 {
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, #38bdf8, transparent 70%);
-  bottom: -100px; right: -100px;
+.vanta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, transparent 0%, rgba(13,13,26,0.55) 70%, var(--ink) 100%);
+  pointer-events: none;
 }
 
 /* Nav */
@@ -109,6 +104,21 @@
 }
 .liveOn  { color: var(--emerald); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.08); }
 .liveOff { color: var(--mist);    border-color: var(--border);         background: var(--surface-1); }
+
+.liveDotWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.liveDot {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+  pointer-events: none;
+}
 
 .userChip {
   display: flex;

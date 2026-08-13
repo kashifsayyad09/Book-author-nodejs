@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, DollarSign, Image, User, Hash, Calendar, Layers, Package, ArrowLeft, Save, Upload } from 'lucide-react';
+import gsap from 'gsap';
 import { useCategories } from '../hooks/useBooks';
 import styles from './BookForm.module.css';
 
@@ -13,6 +14,17 @@ export default function BookForm({ initialValues = {}, onSubmit, submitting, sub
   const [previewError, setPreviewError] = useState(false);
   const { data: catRes } = useCategories();
   const categories = catRes?.data || [];
+  const formRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!formRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(formRef.current.children, { opacity: 0, y: 18 }, {
+        opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out',
+      });
+    }, formRef);
+    return () => ctx.revert();
+  }, []);
 
   useEffect(() => {
     if (Object.keys(initialValues).length) setForm({ ...EMPTY, ...initialValues });
@@ -61,7 +73,7 @@ export default function BookForm({ initialValues = {}, onSubmit, submitting, sub
   const previewSrc = coverPreview || form.cover_url;
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+    <form ref={formRef} className={styles.form} onSubmit={handleSubmit} noValidate>
       {/* Cover preview */}
       <div className={styles.preview}>
         {previewSrc && !previewError ? (

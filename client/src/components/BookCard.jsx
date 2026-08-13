@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Pencil, Star, Package } from 'lucide-react';
+import gsap from 'gsap';
 import { useAuth } from '../context/AuthContext';
 import { useDeleteBook } from '../hooks/useBooks';
 import styles from './BookCard.module.css';
@@ -10,6 +11,7 @@ export default function BookCard({ book, index = 0 }) {
   const deleteBook = useDeleteBook();
   const [imgError, setImgError] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const cardRef = useRef(null);
 
   const canEdit = user && (user.role === 'admin' || user.id === book.created_by);
 
@@ -19,12 +21,35 @@ export default function BookCard({ book, index = 0 }) {
     deleteBook.mutate(book.id);
   };
 
+  // Subtle 3D "lift off the shelf" tilt that tracks the pointer
+  const handleMouseMove = (e) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    gsap.to(el, {
+      rotateY: (px - 0.5) * 10,
+      rotateX: (0.5 - py) * 10,
+      y: -4,
+      duration: 0.4,
+      ease: 'power2.out',
+    });
+  };
+  const handleMouseLeave = () => {
+    const el = cardRef.current;
+    if (!el) return;
+    gsap.to(el, { rotateY: 0, rotateX: 0, y: 0, duration: 0.5, ease: 'power3.out' });
+  };
+
   const price = parseFloat(book.price);
 
   return (
     <article
+      ref={cardRef}
       className={styles.card}
-      style={{ animationDelay: `${index * 60}ms` }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Cover */}
       <Link to={`/books/${book.id}`} className={styles.coverWrap}>

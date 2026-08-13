@@ -5,12 +5,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
-  animation: fadeUp 0.5s ease both;
+  transition: border-color 0.25s, box-shadow 0.25s;
   position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 .card:hover {
-  transform: translateY(-4px);
   border-color: var(--border-h);
   box-shadow: var(--shadow-md), var(--glow);
 }

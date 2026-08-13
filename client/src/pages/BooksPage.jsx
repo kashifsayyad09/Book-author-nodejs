@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, Plus, TrendingUp, BookOpen, Package, DollarSign, RefreshCw } from 'lucide-react';
+import gsap from 'gsap';
 import { useBooks, useBookStats, useCategories } from '../hooks/useBooks';
 import { useAuth } from '../context/AuthContext';
 import BookCard from '../components/BookCard';
@@ -41,21 +42,72 @@ export default function BooksPage() {
   const stats      = statsRes?.data;
   const categories = catRes?.data         || [];
 
+  const heroRef  = useRef(null);
+  const gridRef  = useRef(null);
+  const statsRefContainer = useRef(null);
+
+  // Hero entrance — headline, subhead and CTA arrive in sequence
+  useLayoutEffect(() => {
+    if (!heroRef.current) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.fromTo('[data-hero="eyebrow"]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 })
+        .fromTo('[data-hero="heading"]', { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.7 }, '-=0.3')
+        .fromTo('[data-hero="sub"]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5 }, '-=0.35')
+        .fromTo('[data-hero="cta"]', { opacity: 0, y: 12, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.45 }, '-=0.25');
+    }, heroRef);
+    return () => ctx.revert();
+  }, []);
+
+  // Stat cards: rise-in stagger + numbers count up whenever fresh stats arrive
+  useEffect(() => {
+    if (!stats || !statsRefContainer.current) return;
+    const ctx = gsap.context(() => {
+      const cards = statsRefContainer.current.querySelectorAll('[data-stat-card]');
+      gsap.fromTo(cards, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out' });
+
+      statsRefContainer.current.querySelectorAll('[data-count]').forEach((el) => {
+        const target = parseFloat(el.dataset.count);
+        if (Number.isNaN(target)) return;
+        const prefix = el.dataset.prefix || '';
+        const obj = { val: 0 };
+        gsap.to(obj, {
+          val: target,
+          duration: 1.1,
+          ease: 'power2.out',
+          onUpdate: () => { el.textContent = `${prefix}${Math.round(obj.val).toLocaleString('en-IN')}`; },
+        });
+      });
+    }, statsRefContainer);
+    return () => ctx.revert();
+  }, [stats]);
+
+  // Grid: staggered reveal whenever the visible set of books changes
+  useEffect(() => {
+    if (!gridRef.current || books.length === 0) return;
+    const cards = gridRef.current.children;
+    gsap.fromTo(
+      cards,
+      { opacity: 0, y: 26, rotateX: -6 },
+      { opacity: 1, y: 0, rotateX: 0, duration: 0.5, stagger: 0.05, ease: 'power2.out' }
+    );
+  }, [books.length, page, debouncedQ, category, sort, order]);
+
   return (
     <div className={styles.page}>
       {/* Hero */}
-      <section className={styles.hero}>
+      <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>Your digital library With</p>
-          <h1 className={styles.heading}>
+          <p className={styles.eyebrow} data-hero="eyebrow">Your digital library With</p>
+          <h1 className={styles.heading} data-hero="heading">
             Multicloud Devops<br />
             <em>By Veera Sir Nareshit</em>
           </h1>
-          <p className={styles.sub}>
+          <p className={styles.sub} data-hero="sub">
             A complete platform to learn, explore, and master AWS, Azure, Kubernetes, Terraform, CI/CD, and modern cloud technologies with real-time projects..
           </p>
           {user && (
-            <Link to="/add" className={styles.heroCta}>
+            <Link to="/add" className={styles.heroCta} data-hero="cta">
               <Plus size={18} /> Add a Book
             </Link>
           )}
@@ -63,11 +115,11 @@ export default function BooksPage() {
 
         {/* Stats strip */}
         {stats && (
-          <div className={styles.statsStrip}>
-            <StatCard icon={<BookOpen size={18} />} label="Total Books"  value={stats.total_books} />
-            <StatCard icon={<Package size={18} />}  label="In Stock"     value={stats.total_stock} />
-            <StatCard icon={<DollarSign size={18} />} label="Avg Price"  value={`₹${Number(stats.avg_price || 0).toFixed(0)}`} />
-            <StatCard icon={<TrendingUp size={18} />} label="Categories" value={stats.categories?.length || 0} />
+          <div className={styles.statsStrip} ref={statsRefContainer}>
+            <StatCard icon={<BookOpen size={18} />} label="Total Books"  count={stats.total_books} />
+            <StatCard icon={<Package size={18} />}  label="In Stock"     count={stats.total_stock} />
+            <StatCard icon={<DollarSign size={18} />} label="Avg Price"  count={Number(stats.avg_price || 0).toFixed(0)} prefix="₹" />
+            <StatCard icon={<TrendingUp size={18} />} label="Categories" count={stats.categories?.length || 0} />
           </div>
         )}
       </section>
@@ -163,7 +215,7 @@ export default function BooksPage() {
           <div className={styles.resultsInfo}>
             <span>{pagination.total} book{pagination.total !== 1 ? 's' : ''}</span>
           </div>
-          <div className={styles.grid}>
+          <div className={styles.grid} ref={gridRef}>
             {books.map((book, i) => <BookCard key={book.id} book={book} index={i} />)}
           </div>
 
@@ -181,12 +233,12 @@ export default function BooksPage() {
   );
 }
 
-function StatCard({ icon, label, value }) {
+function StatCard({ icon, label, count, prefix = '' }) {
   return (
-    <div className={styles.statCard}>
+    <div className={styles.statCard} data-stat-card>
       <div className={styles.statIcon}>{icon}</div>
       <div>
-        <div className={styles.statValue}>{value}</div>
+        <div className={styles.statValue} data-count={count} data-prefix={prefix}>{prefix}0</div>
         <div className={styles.statLabel}>{label}</div>
       </div>
     </div>

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, LogIn, LogOut, User, Wifi, WifiOff, Menu, X } from 'lucide-react';
+import gsap from 'gsap';
 import { useAuth } from '../context/AuthContext';
 import { socket, connectSocket } from '../pages/config';
+import VantaBackground from './VantaBackground';
 import styles from './Layout.module.css';
 
 export default function Layout() {
@@ -12,6 +14,10 @@ export default function Layout() {
   const [connected, setConnected] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled]  = useState(false);
+
+  const navRef  = useRef(null);
+  const mainRef = useRef(null);
+  const liveDotRef = useRef(null);
 
   useEffect(() => {
     connectSocket();
@@ -31,15 +37,62 @@ export default function Layout() {
 
   useEffect(() => setMenuOpen(false), [location.pathname]);
 
+  // Nav entrance, once, on first mount
+  useEffect(() => {
+    gsap.fromTo(
+      navRef.current,
+      { y: -72, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.9, ease: 'power3.out' }
+    );
+  }, []);
+
+  // Ambient pulse on the live/offline indicator
+  useEffect(() => {
+    if (!liveDotRef.current) return;
+    const tween = gsap.to(liveDotRef.current, {
+      scale: connected ? 1.35 : 1,
+      opacity: connected ? 0.35 : 0.6,
+      duration: 0.9,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    });
+    return () => tween.kill();
+  }, [connected]);
+
+  // Page transition on route change
+  useEffect(() => {
+    if (!mainRef.current) return;
+    gsap.fromTo(
+      mainRef.current,
+      { opacity: 0, y: 18 },
+      { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }
+    );
+  }, [location.pathname]);
+
   const handleLogout = () => { logout(); navigate('/login'); };
+
+  // One background lives at the shell level; it morphs by section so we
+  // never run two WebGL contexts at once.
+  const isDetailOrForm = /^\/(books\/|add|edit\/)/.test(location.pathname);
+  const bgEffect  = isDetailOrForm ? 'cells' : 'net';
+  const bgOptions = isDetailOrForm
+    ? { color1: 0x6604c2, color2: 0x7efff3, size: 1.4, speed: 1.0 }
+    : { color: 0xa78bfa, backgroundColor: 0x0d0d1a, points: 11.0, maxDistance: 22.0, spacing: 17.0, showDots: true };
 
   return (
     <div className={styles.shell}>
-      {/* Ambient background blobs */}
-      <div className={styles.blob1} aria-hidden />
-      <div className={styles.blob2} aria-hidden />
+      {/* Dynamic, living background — morphs between a network of reading
+          nodes (library / auth) and an organic cellular field (book detail
+          and forms) */}
+      <VantaBackground
+        key={bgEffect}
+        effect={bgEffect}
+        className={styles.vanta}
+        options={bgOptions}
+      />
 
-      <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
+      <nav ref={navRef} className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
         <div className={styles.navInner}>
           {/* Logo */}
           <Link to="/" className={styles.logo}>
@@ -63,7 +116,10 @@ export default function Layout() {
           <div className={styles.navRight}>
             {/* Live indicator */}
             <div className={`${styles.liveChip} ${connected ? styles.liveOn : styles.liveOff}`} title={connected ? 'Live updates active' : 'Offline'}>
-              {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span className={styles.liveDotWrap}>
+                <span ref={liveDotRef} className={styles.liveDot} />
+                {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              </span>
               <span>{connected ? 'Live' : 'Offline'}</span>
             </div>
 
@@ -104,7 +160,7 @@ export default function Layout() {
         )}
       </nav>
 
-      <main className={styles.main}>
+      <main ref={mainRef} key={location.pathname} className={styles.main}>
         <Outlet />
       </main>
 

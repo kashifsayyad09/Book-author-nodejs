@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Pencil } from 'lucide-react';
+import gsap from 'gsap';
 import BookForm from '../components/BookForm';
 import { useBook, useUpdateBook } from '../hooks/useBooks';
 import Spinner from '../components/Spinner';
@@ -11,6 +12,15 @@ export default function EditBookPage() {
   const navigate = useNavigate();
   const { data: res, isLoading } = useBook(id);
   const updateBook = useUpdateBook();
+  const headerRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!headerRef.current || isLoading) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(headerRef.current, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power2.out' });
+    }, headerRef);
+    return () => ctx.revert();
+  }, [isLoading]);
 
   const book = res?.data;
   const initial = useMemo(() => book ? {
@@ -33,7 +43,7 @@ export default function EditBookPage() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <div className={styles.header} ref={headerRef}>
         <div className={styles.iconWrap}><Pencil size={20} /></div>
         <div>
           <h1 className={styles.heading}>Edit Book</h1>
