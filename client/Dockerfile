@@ -8,6 +8,13 @@ COPY package.json package-lock.json ./
 RUN npm install --no-audit --no-fund
 
 COPY . .
+
+# CRA's build (Terser minification) is memory-hungry, and source maps roughly
+# double that cost — disable them and give Node explicit headroom so the
+# build doesn't hit V8's heap limit inside memory-constrained containers.
+ENV GENERATE_SOURCEMAP=false
+ENV NODE_OPTIONS=--max-old-space-size=2048
+
 RUN npm run build
 
 # Stage 2: Serve with NGINX
